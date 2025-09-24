@@ -1,0 +1,12 @@
+2025/09/24-17:11:41.954 1fa5859 Reusing MANIFEST /Users/gustavidunsloth/Documents/Data Science/YouTube Algorithm Audit/data/session/Bob/Default/Local Extension Settings/ibhkdacnlghhenokjpagldmcmdianbdb/MANIFEST-000001
+2025/09/24-17:11:41.954 1fa5859 Recovering log #17
+2025/09/24-17:11:41.954 1fa5859 Reusing old log /Users/gustavidunsloth/Documents/Data Science/YouTube Algorithm Audit/data/session/Bob/Default/Local Extension Settings/ibhkdacnlghhenokjpagldmcmdianbdb/000017.log 
+2025/09/24-17:12:19.893 1fa585b Level-0 table #31: started
+2025/09/24-17:12:19.899 1fa585b Level-0 table #31: 4539666 bytes OK
+2025/09/24-17:12:19.901 1fa585b Delete type=0 #17
+2025/09/24-17:13:18.348 1fa585b Level-0 table #33: started
+2025/09/24-17:13:18.355 1fa585b Level-0 table #33: 4694741 bytes OK
+2025/09/24-17:13:18.358 1fa585b Delete type=0 #30
+2025/09/24-17:13:21.362 1fa585b Level-0 table #35: started
+2025/09/24-17:13:21.385 1fa585b Level-0 table #35: 5256992 bytes OK
+2025/09/24-17:13:21.387 1fa585b Delete type=0 #32
