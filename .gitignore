@@ -3,5 +3,6 @@
 auth/
 .env
 __pycache__/
-data/session/*
+data/session/
 extensions/
+data/logs/

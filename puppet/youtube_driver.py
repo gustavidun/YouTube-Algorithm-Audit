@@ -2,16 +2,18 @@ from patchright.async_api import Page, Playwright, BrowserContext, async_playwri
 from pathlib import Path
 import re 
 import asyncio
+import logging
 
 class VideoUnavailableException(Exception):
     pass
 
 class YouTubeDriver():
     """Async context manager for interacting with YouTube using Playwright"""
-    def __init__(self, session_dir : Path, headless : bool, ublock_path : Path):
+    def __init__(self, session_dir : Path, headless : bool, ublock_path : Path, logger : logging.Logger):
         self.session_dir = session_dir
         self.headless = headless
         self.ublock_path = ublock_path
+        self.logger = logger
 
         self._page : Page | None = None
         self._context : BrowserContext | None = None
@@ -37,7 +39,7 @@ class YouTubeDriver():
 
         session = await self._context.new_cdp_session(self._page)
         info = await session.send("Browser.getVersion")
-        print("Chrome version:", info["product"])
+        self.logger.info("Initialising YouTube Driver. Chrome version:", info["product"])
 
         await self._page.goto("https://www.youtube.com")
 
@@ -57,7 +59,7 @@ class YouTubeDriver():
 
         consent_btn = self._page.locator('button[aria-label*="Accept the use of cookies"]')
         if await consent_btn.count() > 0:
-            print("Accepting cookies...")
+            self.logger.info("Accepting cookies...")
             await consent_btn.press("Enter")
             await asyncio.sleep(1)
             await self._page.reload()
@@ -73,7 +75,7 @@ class YouTubeDriver():
         # check for video errors
         error = self._page.locator("yt-player-error-message-renderer")
         if await error.count() > 0:
-            print("Video is unavailable.")
+            self.logger.warning("Video is unavailable.")
             raise VideoUnavailableException()
 
         # check for title element
@@ -82,7 +84,7 @@ class YouTubeDriver():
             raise VideoUnavailableException()
         
         title = await title_elem.get_attribute("title")
-        print(f"Playing video: {title}")
+        self.logger.info(f"Playing video: {title}")
 
         #monitor playback time
         await asyncio.sleep(time)
@@ -94,7 +96,7 @@ class YouTubeDriver():
                 await self._page.keyboard.press("k")
 
             await asyncio.sleep(1)
-            print(wt)
+            self.logger.debug(f"Playback time: {wt}")
 
         #get up next video ids
         thumbs = await self._page.locator("a.yt-lockup-metadata-view-model__title").all()
