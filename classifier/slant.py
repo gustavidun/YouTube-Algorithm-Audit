@@ -1,5 +1,4 @@
 import pandas as pd
-from dataclasses import dataclass
 from pathlib import Path
 from functools import lru_cache
 import pickle
