@@ -39,7 +39,7 @@ class YouTubeDriver():
 
         session = await self._context.new_cdp_session(self._page)
         info = await session.send("Browser.getVersion")
-        self.logger.info("Initialising YouTube Driver. Chrome version:", info["product"])
+        self.logger.info(f"Initialising YouTube Driver. Chrome version: {info["product"]}")
 
         await self._page.goto("https://www.youtube.com")
 
