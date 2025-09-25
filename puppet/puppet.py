@@ -9,23 +9,24 @@ from classifier import get_slant, get_video_ids, write_blacklist, load_blacklist
 
 
 class YTPuppet():
-    def __init__(self, id : str, slant : float, headless : bool = True, stream_output = True):
+    def __init__(self, id : str, slant : float, headless : bool = True):
         self.ID = id
         self.cur_slant = slant
 
         self.logger = logging.getLogger(self.ID)
         self.logger.setLevel(logging.DEBUG)
-        log_path = config.LOG_DIR / self.ID
-
-        file_handler = logging.FileHandler(log_path, encoding="utf-8")
-        console_handler = logging.StreamHandler()
 
         formatter = logging.Formatter(
             "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
+        file_handler = logging.FileHandler(config.LOG_DIR / self.ID, encoding="utf-8")
+        file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(formatter)
+
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.DEBUG)
         console_handler.setFormatter(formatter)
 
         self.logger.addHandler(file_handler)
@@ -100,6 +101,8 @@ class YTPuppet():
             self.logger.info("Initialising drifting...")
             await self.drift(driver, wt=5, depth=10)
 
+            self.logger.info("Finished run. Closing...")
+
 
 async def main():
     agent = YTPuppet("bob", 0.7)
@@ -107,7 +110,7 @@ async def main():
 
     async with asyncio.TaskGroup() as tg:
         task1 = tg.create_task(agent.run())
-        task2 = tg.create_task(agent2.run())    
+        #task2 = tg.create_task(agent2.run())    
 
 
 if __name__ == "__main__":
