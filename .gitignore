@@ -1,8 +1,8 @@
 .venv/
 .DS_Store
-auth/
 .env
 __pycache__/
-data/session/
-puppet/extensions/
-data/logs/
+src/data/session/
+src/puppet/extensions/
+src/data/logs/
+src/data/puppets

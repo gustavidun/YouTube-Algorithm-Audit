@@ -3,6 +3,7 @@ from pathlib import Path
 import re 
 import asyncio
 import logging
+from models import Video 
 
 class VideoUnavailableException(Exception):
     pass
@@ -65,17 +66,17 @@ class YouTubeDriver():
             await self._page.reload()
 
 
-    async def watch(self, id : str, time : float):
+    async def watch(self, vid : Video, time : float) -> tuple[Video, list[Video]]:
         assert self._page
 
-        url = f"https://www.youtube.com/watch?v={id}"
+        url = f"https://www.youtube.com/watch?v={vid.id}"
         await self._page.goto(url)
         await self._page.wait_for_load_state("domcontentloaded")
 
         # check for video errors
         error = self._page.locator("yt-player-error-message-renderer")
         if await error.count() > 0:
-            self.logger.warning("Video is unavailable.")
+            self.logger.warning(f"Video with id {vid.id} is unavailable.")
             raise VideoUnavailableException()
 
         # check for title element
@@ -84,7 +85,8 @@ class YouTubeDriver():
             raise VideoUnavailableException()
         
         title = await title_elem.get_attribute("title")
-        self.logger.info(f"Playing video: {title}")
+        vid.title = title
+        self.logger.info(f"Playing video: {vid.title}")
 
         #monitor playback time
         await asyncio.sleep(time)
@@ -102,4 +104,5 @@ class YouTubeDriver():
         thumbs = await self._page.locator("a.yt-lockup-metadata-view-model__title").all()
         urls = [await x.get_attribute("href") for x in thumbs]
         ids = [re.search(r"/watch\?v=([a-zA-Z0-9_-]{11})", x).group(1) for x in urls] # extract ids
-        return ids    
+        recs = [Video(id) for id in ids]
+        return vid, recs  
