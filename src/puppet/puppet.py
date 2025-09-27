@@ -5,15 +5,16 @@ import pandas as pd
 from .youtube_driver import YouTubeDriver, VideoUnavailableException
 import config
 
-from classifier import get_slant, get_videos, write_blacklist, load_blacklist
+from data_fetcher import get_video, get_videos, update_videos
 from models import Watch, Video
 
 PuppetState = Literal["init", "training", "drifting", "closed"]
 
 class YTPuppet():
-    def __init__(self, id : str, slant : float, headless : bool = True):
+    def __init__(self, id : str, slant : float, target_slant : float, headless : bool = True):
         self.ID = id
         self.cur_slant = slant
+        self.target_slant = target_slant
 
         self.cur_state : PuppetState = "init"
         self.history : list[Watch] = []
@@ -52,7 +53,8 @@ class YTPuppet():
         vid, recs = await driver.watch(vid, wt)
 
         for rec in recs:
-            rec.slant = get_slant(rec.id)
+            rec_vid = get_video(rec.id)
+            if rec_vid is not None: rec.slant = rec_vid.slant
 
         watch = Watch(self.cur_state, self, self.cur_slant, len(self.history) + 1, vid, recs)
         self.history.append(watch)
@@ -70,7 +72,6 @@ class YTPuppet():
         self.logger.info(f"Fetching train videos in slant range: {slant_range}")
         train_vids = get_videos(
             slant_range=slant_range,
-            exclude=load_blacklist(),
             n=depth
         )
 
@@ -79,9 +80,10 @@ class YTPuppet():
             try:
                 await self.watch(driver, vid, wt)
             except VideoUnavailableException: #add to blacklist if unavailable
-                blacklist.append(vid.id)
+                vid.blacklist = True
+                blacklist.append(vid)
 
-        write_blacklist(blacklist)
+        update_videos(blacklist)
 
 
     async def drift(self, driver : YouTubeDriver, seed_margin = 0.2, depth = 200, wt = 30):
@@ -92,7 +94,7 @@ class YTPuppet():
 
         next_vid = get_videos(
             slant_range=slant_range,
-            exclude=[watch.video.id for watch in self.history] + load_blacklist(),
+            exclude=[watch.video.id for watch in self.history],
             n=1
         )[0]
 
@@ -101,6 +103,8 @@ class YTPuppet():
                 watch = await self.watch(driver, next_vid, wt)
             except VideoUnavailableException: #skip if unavailable
                 continue
+            
+            self.cur_slant = (self.target_slant - self.cur_slant) / depth # drift term
 
             next_vid = min( # select closest slant
                 watch.recs,

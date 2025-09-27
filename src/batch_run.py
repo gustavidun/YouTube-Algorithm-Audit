@@ -3,7 +3,7 @@ import asyncio
 from puppet import YTPuppet
 
 N = 10
-SLANTS = [-1, -0.5, 0, 0.5, 1]
+SLANTS = [(-1, 0), (-0.5, 0), (0, 1), (0.5, 0), (1, 0)] #tuple[0] = initial slant | tuple[1] = target slant
 
 async def main():
 
@@ -13,7 +13,7 @@ async def main():
     k = N // len(SLANTS)
     partitions = SLANTS * k
 
-    puppets = [YTPuppet(f"puppet-", slant=s) for i, s in enumerate(partitions)]
+    puppets = [YTPuppet(f"puppet-{i}", slant=s[0], target_slant=s[1]) for i, s in enumerate(partitions)]
 
     async with asyncio.TaskGroup() as tg:
         tasks = [tg.create_task(puppet.run()) for puppet in puppets]

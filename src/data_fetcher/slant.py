@@ -1,5 +1,4 @@
 import pandas as pd
-from pathlib import Path
 from functools import lru_cache
 import pickle
 import random
@@ -10,7 +9,7 @@ from models import Video
 @lru_cache(maxsize=1)
 def load_slants():
     """ Return and cache slant df """
-    return pd.read_csv(config.SLANT_ESTIMATIONS)
+    return pd.read_csv(config.SLANT_ESTIMATIONS_CSV)
 
 
 def load_blacklist() -> list[str]:
@@ -51,4 +50,3 @@ def write_blacklist(ids : list[str]):
 
     with open(config.BLACKLIST, "wb") as f:
         pickle.dump(blacklist, f)
-
