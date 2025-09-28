@@ -22,9 +22,6 @@ UBLOCK_PATH = ROOT / "src" / "puppet" / "extensions"
 
 SLANT_DIR = ROOT / "data" / "slant"
 SLANT_ESTIMATIONS_CSV = SLANT_DIR / "slant_estimations.csv"
-SLANT_METADATA = SLANT_DIR / "slant_metadata.pkl"
-
-BLACKLIST = SLANT_DIR / "blacklist.pkl"
 
 if not SESSION_DIR.exists():
     os.mkdir(SESSION_DIR)

@@ -4,7 +4,7 @@ from models import Video
 import pandas as pd
 import logging
 
-from config import DB_PATH, SLANT_ESTIMATIONS_CSV
+import config
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS video (
@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS ix_video_channel ON video(channel);
 
 
 def get_connection():
-    return sqlite3.connect(DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
+    return sqlite3.connect(config.DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
 
 
 def build_db():
@@ -33,7 +33,7 @@ def build_db():
     with get_connection() as con:
         con.executescript(SCHEMA)
 
-        df = pd.read_csv(SLANT_ESTIMATIONS_CSV)
+        df = pd.read_csv(config.SLANT_ESTIMATIONS_CSV)
         ids = df["video_id"]
         slants = df["slant"]
 
