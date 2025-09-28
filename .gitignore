@@ -2,7 +2,9 @@
 .DS_Store
 .env
 __pycache__/
-src/data/session/
+data/session/
 src/puppet/extensions/
-src/data/logs/
-src/data/puppets
+data/logs/
+data/puppets
+data/db
+.vscode/
