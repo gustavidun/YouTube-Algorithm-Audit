@@ -21,5 +21,13 @@ def build_metadata():
         print(f"Updated chunk {i}/{len(chunks)}")
 
 
+def blacklist_empty(): 
+    """Blacklist videos with no metadata."""
+    vids = get_videos((-1,1))
+    for vid in vids:
+        if vid.title is None: vid.blacklist = True
+    update_videos(vids)
+
+
 if __name__ == "__main__":
-    build_metadata()
+    pass
