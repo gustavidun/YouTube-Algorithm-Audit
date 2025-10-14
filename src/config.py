@@ -22,6 +22,12 @@ UBLOCK_PATH = ROOT / "src" / "puppet" / "extensions"
 
 SLANT_DIR = ROOT / "data" / "slant"
 SLANT_ESTIMATIONS_CSV = SLANT_DIR / "slant_estimations.csv"
+SLANTS_TRAIN = SLANT_DIR / "slants_train.pkl"
+
+MODELS_DIR = ROOT / "data" / "models"
+
+if not MODELS_DIR.exists():
+    os.mkdir(SESSION_DIR)
 
 if not SESSION_DIR.exists():
     os.mkdir(SESSION_DIR)

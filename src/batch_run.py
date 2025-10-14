@@ -2,8 +2,8 @@ import asyncio
 
 from puppet import YTPuppet
 
-N = 10
-SLANTS = [(-1, 0), (-0.5, 0), (0, 1), (0.5, 0), (1, 0)] #tuple[0] = initial slant | tuple[1] = target slant
+N = 30
+SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1)] 
 
 async def main():
 

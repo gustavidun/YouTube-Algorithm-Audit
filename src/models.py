@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from puppet import YTPuppet 
@@ -14,6 +14,14 @@ class Video():
     tags : Optional[list[str]] = None
     category : Optional[str] = None
     blacklist : Optional[bool] = False
+    L : Optional[int] = None
+    R : Optional[int] = None
+    train : Optional[bool] = None
+    comments : Optional[list[str]] = None
+
+    def is_metadata_empty(self) -> bool:
+        attrs = (self.title, self.description, self.tags, self.comments)
+        return all(a in (None, "", []) for a in attrs)
 
     def __str__(self):
         return f"Video ID: {self.id}, video slant: {self.slant}"
@@ -23,9 +31,14 @@ class Watch():
     state : str
     puppet : "YTPuppet"
     puppet_slant : float
+    puppet_cond : tuple
     depth : int
     video : Video
     recs : list[Video]
+    errors : list[str]
+    source : Literal["homepage", "video"]
+    watch_time : float
 
     def __str__(self):
         return f"{self.video}. Depth: {self.depth}, puppet slant: {self.puppet_slant}, puppet state: {self.state}"
+    

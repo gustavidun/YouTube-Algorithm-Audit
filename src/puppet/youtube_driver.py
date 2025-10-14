@@ -1,12 +1,20 @@
 from patchright.async_api import Page, Playwright, BrowserContext, async_playwright
+from patchright.async_api import TimeoutError as PWTimeoutError
 from pathlib import Path
 import re 
 import asyncio
 import logging
+from collections import deque
+
 from models import Video 
 
 class VideoUnavailableException(Exception):
-    pass
+    def __str__(self):
+        return self.__class__.__name__
+
+class PlaybackException(Exception):
+    def __str__(self):
+        return self.__class__.__name__
 
 class YouTubeDriver():
     """Async context manager for interacting with YouTube using Playwright"""
@@ -66,43 +74,86 @@ class YouTubeDriver():
             await self._page.reload()
 
 
-    async def watch(self, vid : Video, time : float) -> tuple[Video, list[Video]]:
+    async def _get_recs(self, n_recs) -> list[Video]:
+        await asyncio.sleep(1)
+        thumbs = await self._page.locator("a.yt-lockup-metadata-view-model__title").all()
+        urls = [await x.get_attribute("href") for x in thumbs]
+        ids = [re.search(r"/watch\?v=([a-zA-Z0-9_-]{11})", x).group(1) for x in urls] # extract ids
+        recs = [Video(id) for id in ids]
+        return recs[:n_recs]  
+
+
+    async def get_homepage_recs(self, n_recs = 8):
+        assert self._page
+
+        await self._page.goto("https://www.youtube.com/")
+        await self._page.wait_for_load_state("domcontentloaded")
+
+        return await self._get_recs(n_recs)
+
+
+    async def play_video(self, vid : Video, n_recs = 8):
         assert self._page
 
         url = f"https://www.youtube.com/watch?v={vid.id}"
         await self._page.goto(url)
         await self._page.wait_for_load_state("domcontentloaded")
 
+        # check for ads
+        ad = self._page.locator(".ytp-ad-module")
+        ad_triggered = False
+        while await ad.is_visible():
+            if not ad_triggered:
+                self.logger.debug("Waiting for ad to end.")
+                ad_triggered = True
+            skip_button = self._page.locator("button.ytp-skip-ad-button")
+            if await skip_button.is_visible():
+                await skip_button.click()
+                self.logger.debug("Skipping ad.")
+            await asyncio.sleep(1)
+
         # check for video errors
         error = self._page.locator("yt-player-error-message-renderer")
         if await error.count() > 0:
-            self.logger.warning(f"Video with id {vid.id} is unavailable.")
             raise VideoUnavailableException()
 
         # check for title element
-        title_elem = self._page.locator("h1.ytd-watch-metadata yt-formatted-string")
-        if await title_elem.count() < 1:
+        try:
+            title_elem = self._page.locator("h1.ytd-watch-metadata yt-formatted-string")
+            self._page.wait_for_function(
+                "el => el.getAttribute('title') && el.getAttribute('title').length > 0",
+                arg=title_elem,
+                timeout=5000
+            )
+        except PWTimeoutError:
             raise VideoUnavailableException()
         
         title = await title_elem.get_attribute("title")
         vid.title = title
         self.logger.info(f"Playing video: {vid.title}")
 
+        recs = await self._get_recs(n_recs)
+        return vid, recs
+
+
+    async def wait_wt(self, time : float) -> tuple[Video, list[Video]]:
         #monitor playback time
-        await asyncio.sleep(time)
         wt = 0
+        wt_buffer = deque(maxlen=20)
+
         while wt <= time:
             wt = await self._page.evaluate("document.querySelector('video')?.currentTime ?? 0") # get player time
+            wt_buffer.append(wt)
+            
+            if len(wt_buffer) > 5:  # if stalled for 5 seconds, hit play
+                if wt_buffer[-5] == wt_buffer[-1]:
+                    await self._page.keyboard.press("k")
 
-            if wt == 0: # if playback stalled, try hitting play again
-                await self._page.keyboard.press("k")
+            if len(wt_buffer) > 15:  # if stalled for 15, skip
+                if wt_buffer[-15] == wt_buffer[-1]:
+                    raise PlaybackException
 
             await asyncio.sleep(1)
-            self.logger.debug(f"Playback time: {wt}")
 
-        #get up next video ids
-        thumbs = await self._page.locator("a.yt-lockup-metadata-view-model__title").all()
-        urls = [await x.get_attribute("href") for x in thumbs]
-        ids = [re.search(r"/watch\?v=([a-zA-Z0-9_-]{11})", x).group(1) for x in urls] # extract ids
-        recs = [Video(id) for id in ids]
-        return vid, recs  
+        self.logger.debug(f"Playback time: {wt}")
+        return wt

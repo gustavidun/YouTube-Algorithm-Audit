@@ -2,9 +2,10 @@ import sqlite3
 from dataclasses import astuple, asdict
 from models import Video
 import pandas as pd
-import logging
+from pathlib import Path
 
 import config
+from logger import setup_logger
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS video (
@@ -15,7 +16,11 @@ CREATE TABLE IF NOT EXISTS video (
   description TEXT,
   tags TAGLIST,
   category TEXT,
-  blacklist INTEGER DEFAULT 0
+  blacklist INTEGER DEFAULT 0,
+  L INTEGER,
+  R INTEGER,
+  train INTEGER DEFAULT 0,
+  comments TAGLIST
 );
 
 CREATE INDEX IF NOT EXISTS ix_video_slant ON video(slant);
@@ -36,14 +41,16 @@ def build_db():
         df = pd.read_csv(config.SLANT_ESTIMATIONS_CSV)
         ids = df["video_id"]
         slants = df["slant"]
+        L = df["liberal_landmark_follows"]
+        R = df["conservative_landmark_follows"]
 
         #build from CSV if IDs dont exist
         con.executemany("""
             INSERT OR IGNORE INTO video 
-                (id, slant)
-            VALUES (?, ?)
+                (id, slant, L, R)
+            VALUES (?, ?, ?, ?)
             """,
-            zip(ids, slants)
+            zip(ids, slants, L, R)
         )
 
 
@@ -52,13 +59,35 @@ def insert_video(vid : Video):
 
     with get_connection() as con:
         con.execute("""
-            INSERT INTO video
-            (id, slant, title, channel, description, tags, category, blacklist)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO video (
+                id, slant, title, channel, description, tags, category,
+                blacklist, L, R, train, comments
+            )
+            VALUES (
+                :id, :slant, :title, :channel, :description, :tags, :category,
+                :blacklist, :L, :R, :train, :comments
+            )
             """,
-            astuple(vid)
-        )    
+            asdict(vid)
+        )
 
+def insert_videos(vids: list[Video]) -> int:
+    logger.info(f"Adding {len(vids)} videos...")
+
+    with get_connection() as con:
+        con.executemany(
+            """
+            INSERT OR IGNORE INTO video (
+                id, slant, title, channel, description, tags, category,
+                blacklist, L, R, train, comments
+            )
+            VALUES (
+                :id, :slant, :title, :channel, :description, :tags, :category,
+                :blacklist, :L, :R, :train, :comments
+            )
+            """,
+            [asdict(v) for v in vids]
+        )
 
 def update_videos(vids : list[Video]):
     logger.info(f"Updating {len(vids)} videos...")
@@ -72,28 +101,30 @@ def update_videos(vids : list[Video]):
                 description = :description,
                 tags = :tags,
                 category = :category,
-                blacklist = :blacklist
+                blacklist = :blacklist,
+                L = :L,
+                R = :R,
+                train = :train,
+                comments = :comments
             WHERE id = :id 
             """,
             [asdict(vid) for vid in vids]
         )
 
 
-def get_video(id : str):
-    logger.info(f"Fetching video {id}...")
-
+def get_videos_by_id(ids: list[str]) -> list[Video]:
+    if not ids:
+        return []
+    placeholders = ",".join("?" * len(ids))
+    sql = f"SELECT * FROM video WHERE id IN ({placeholders})"
     with get_connection() as con:
-        row = con.execute("SELECT * FROM video WHERE id = ?", (id,)).fetchone()
-        if row is not None:
-            vid = Video(*row) 
-            return vid
-        return None
+        rows = con.execute(sql, ids).fetchall()
+    logger.info(f"Fetched {len(rows)}/{len(ids)} videos...")
+    return [Video(*row) for row in rows]
 
 
-def get_videos(slant_range : tuple[float,float], exclude : list[str] = [], n = 0, exclude_blacklist=True) -> list[Video]:
+def get_videos(slant_range : tuple[float,float], exclude : list[str] = [], n = 0, exclude_blacklist=True, train=False) -> list[Video]:
     """ Return videos in slant range. Optionally exclude list of ids. Optionally define n videos to randomly sample """
-
-    logger.info(f"Fetching videos in slant range {slant_range}...")
 
     params = list(slant_range)
     sql = "SELECT * FROM video WHERE slant BETWEEN ? AND ?"
@@ -106,42 +137,38 @@ def get_videos(slant_range : tuple[float,float], exclude : list[str] = [], n = 0
     if exclude_blacklist:
         sql += f" AND blacklist != 1"
 
+    if train:
+        sql += f" AND train == 1"
+
     if n > 0:
         sql += " ORDER BY RANDOM() LIMIT ?"
         params.append(n)
 
     with get_connection() as con:
-        rows = con.execute(sql, params)
+        rows = con.execute(sql, params).fetchall()
 
+    logger.info(f"Fetching videos in slant range {slant_range}...")
     return [Video(*row) for row in rows]
 
 
-def list_to_text(lst : list):
-    return ",".join(lst)
+def save_snapshot(path : Path):
+    vids = get_videos((-1,1))
+    df = pd.DataFrame([asdict(vid) for vid in vids])
+    df.to_pickle(path)
 
 
-def text_to_list(data):
-    return data.decode().split(",")
+def taglist_to_text(lst : list):
+    return " -|- ".join(lst)
 
 
-def setup_logger():
-    logger = logging.getLogger("Database")
-    logger.setLevel(logging.INFO)
+def text_to_taglist(data):
+    return data.decode().split(" -|- ")
 
-    ch = logging.StreamHandler()
-    formatter = logging.Formatter("%(asctime)s %(name)s [%(levelname)s]: %(message)s")
-    ch.setFormatter(formatter)
-
-    logger.addHandler(ch) 
-    return logger
-
-
-logger = setup_logger()
+logger = setup_logger("Database")
 
 # tags adapter
-sqlite3.register_adapter(list, list_to_text)
-sqlite3.register_converter("TAGLIST", text_to_list)
+sqlite3.register_adapter(list, taglist_to_text)
+sqlite3.register_converter("TAGLIST", text_to_taglist)
 
 build_db()
-
 

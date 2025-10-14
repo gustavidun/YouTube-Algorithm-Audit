@@ -6,16 +6,19 @@ from models import Video
 
 from itertools import islice
 from youtube_comment_downloader import *
+
 from youtube_transcript_api import YouTubeTranscriptApi
 import time
+import json
 
 VIDEOS_ENDPOINT : str = "https://www.googleapis.com/youtube/v3/videos"
+COMMENTS_ENDPOINT : str = "https://www.googleapis.com/youtube/v3/commentThreads"
 
 api_index : int = 0
 error_counter : int = 0 
 
 
-def request(url : str, params : dict):
+async def request(url : str, params : dict):
     global api_index, error_counter
     try:
         resp = requests.get(url, params=params)
@@ -27,9 +30,11 @@ def request(url : str, params : dict):
             print("No response.")
             return
     except requests.HTTPError as e:
-        print("HTTP error...")
         status = e.response.status_code
-        if status == 403:
+        err = json.loads(e.response.content)
+        reason = err["error"]["errors"][0]["reason"]
+        print(f"HTTP error... {reason}")
+        if status == 403 and reason == "quotaExceeded":
             print(f"API index {api_index} reached quota.")
             if (api_index + 1 < len(config.API_KEY)):
                 api_index += 1
@@ -50,11 +55,11 @@ def request(url : str, params : dict):
             raise Exception("Max errors reached.")
 
 
-def get_videos_metadata(vids : list[Video]) -> list[Video]:
+async def get_videos_metadata(vids : list[Video]) -> list[Video]:
     if len(vids) > 50: #split list 
         raise Exception("API can only process 50 videos at a time.")
 
-    video_resp = request(VIDEOS_ENDPOINT, params = {
+    video_resp = await request(VIDEOS_ENDPOINT, params = {
         "key": config.API_KEY[api_index],
         "part": "contentDetails, snippet, statistics",
         "id": ",".join([vid.id for vid in vids])
@@ -80,18 +85,43 @@ def get_videos_metadata(vids : list[Video]) -> list[Video]:
     return vids
 
 
-def get_comments(id : str, n = 10, wait = 0):
-    """Get top n comments from video ID"""
-    if wait > 0: time.sleep(wait)
+async def get_comments(vid : Video):
+    """ Get comments using YouTube Data API """    
+    video_resp = await request(COMMENTS_ENDPOINT, params = {
+        "key": config.API_KEY[api_index],
+        "part": "snippet",
+        "videoId": vid.id,
+        "order": "relevance",
+        "textFormat": "plainText"
+    })
 
+    if not video_resp:
+        print("No response")
+        return
+
+    if not "items" in video_resp:
+        print("No items in response")
+        return
+
+    vid.comments = [item["snippet"]["topLevelComment"]["snippet"]["textDisplay"] for item in video_resp["items"]] 
+
+    return vid
+
+
+def scrape_comments(vid : Video, n = 20, wait = 0.05):
+    """Scrape comments from unofficial YouTube API"""
     downloader = YoutubeCommentDownloader()
-    try: 
-        comments = downloader.get_comments_from_url(f"https://www.youtube.com/watch?v={id}", sort_by=SORT_BY_POPULAR)
-        print(f"Fetched comments from video id {id}")
-        return [comment["text"] for comment in list(islice(comments, n))]
-    except Exception as e:
-        print(f"Couldn't fetch comments. Error: {e}. Skipping.")
-        return None
+    comments = list(islice(
+        downloader.get_comments_from_url(
+            f'https://www.youtube.com/watch?v={vid.id}',
+            sort_by=SORT_BY_POPULAR,
+            sleep=wait
+        ),
+        n
+    ))
+    vid.comments = [comment["text"] for comment in comments]
+    print("fetched comments")
+    return vid 
 
 
 def get_transcript(id : str, wait = 0):
@@ -107,3 +137,4 @@ def get_transcript(id : str, wait = 0):
     except Exception as e:
         print(f"Transcript unavailable. Error {e}. Skipping.")
         return None
+
