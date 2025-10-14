@@ -120,7 +120,6 @@ def scrape_comments(vid : Video, n = 20, wait = 0.05):
         n
     ))
     vid.comments = [comment["text"] for comment in comments]
-    print("fetched comments")
     return vid 
 
 
