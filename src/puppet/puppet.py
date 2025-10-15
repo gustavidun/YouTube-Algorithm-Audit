@@ -2,6 +2,7 @@ import logging
 from typing import Literal
 import pandas as pd
 import asyncio
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from .youtube_driver import YouTubeDriver, VideoUnavailableException, PlaybackException
 import config
@@ -79,6 +80,7 @@ class YTPuppet():
         return match + missing_preds
 
 
+    @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def _get_homepage_recs(self, driver : YouTubeDriver, depth):
         recs = await driver.get_homepage_recs()
 
@@ -86,8 +88,7 @@ class YTPuppet():
             Watch(self.cur_state, self, self.cur_slant, (self.init_slant, self.target_slant), depth, None, recs, [], "homepage", 0)
         )
 
-        try: recs = await self._get_slants(recs)
-        except ValueError: return await self._get_homepage_recs(driver, depth)
+        recs = await self._get_slants(recs)
 
         return recs
 

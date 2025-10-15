@@ -1,5 +1,6 @@
 from patchright.async_api import Page, Playwright, BrowserContext, async_playwright
 from patchright.async_api import Error as PWError, TimeoutError as PWTimeoutError
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from pathlib import Path
 import re 
 import asyncio
@@ -74,18 +75,9 @@ class YouTubeDriver():
             await self._page.reload()
 
 
-    async def _goto_with_retry(self, url, attempts=3, wait_until="domcontentloaded", timeout=10000):
-        for i in range(attempts):
-            try:
-                return await self._page.goto(url, wait_until=wait_until, timeout=timeout)
-            except PWError as e:
-                msg = str(e)
-                transient = ("ERR_CONNECTION_CLOSED" in msg or
-                            "ERR_CONNECTION_RESET" in msg or
-                            "ERR_TIMED_OUT" in msg)
-                if not transient or i == attempts - 1:
-                    raise
-                await asyncio.sleep(0.5 * (2 ** i))
+    @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10), retry=retry_if_exception_type(PWError))
+    async def _goto_with_retry(self, url, wait_until="domcontentloaded", timeout=10000):
+        return await self._page.goto(url, wait_until=wait_until, timeout=timeout)
 
 
     async def _get_recs(self, n_recs) -> list[Video]:
