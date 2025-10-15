@@ -53,6 +53,8 @@ class YTPuppet():
         rec_old = recs
         recs = [rec for rec in recs if rec.id not in [w.video.id for w in vid_hist]]
         self.logger.info(f"Filtered out {len(rec_old) - len(recs)} already watched videos.")
+        if len(recs) == 0:
+            raise ValueError("No valid videos")
 
         fetch = get_videos_by_id([rec.id for rec in recs])
         db_map = {v.id: v for v in fetch}
@@ -72,6 +74,18 @@ class YTPuppet():
         return match + missing + missing_slant
 
 
+    async def _get_homepage_recs(self, driver : YouTubeDriver, depth):
+        recs = await driver.get_homepage_recs()
+        
+        try: recs = await self._get_slants(recs)
+        except ValueError: recs = await driver.get_homepage_recs() # try again if no valid videos
+
+        self.history.append(
+            Watch(self.cur_state, self, self.cur_slant, (self.init_slant, self.target_slant), depth, None, recs, [], "homepage", 0)
+        )
+        return recs
+
+
     async def _watch(self, driver : YouTubeDriver, vid : Video, depth, get_slants : bool) -> Watch:
         error_log = []
 
@@ -85,7 +99,9 @@ class YTPuppet():
             error_log.append(e)
             raise
 
-        if get_slants: recs = await self._get_slants(recs)
+        if get_slants:
+            try: recs = await self._get_slants(recs)
+            except ValueError: recs = self._get_homepage_recs(driver, depth)  # sample from homepage if no valid videos
 
         try: 
             wt = await driver.wait_wt(self.wt)
@@ -124,22 +140,19 @@ class YTPuppet():
 
     async def drift(self, driver : YouTubeDriver, homepage_freq = 5):
         self.cur_state = "drifting"
-        next_vid = await self._get_closest_slant(await driver.get_homepage_recs())
+        recs = await self._get_homepage_recs(driver, 0)
+        next_vid = await self._get_closest_slant(recs)
 
         for i in range(1, self.drift_depth + 1):
             self.cur_slant += (self.target_slant - self.init_slant) / self.drift_depth # drift term
 
             watch = await self._watch(driver, next_vid, i, get_slants=True)
+            recs = watch.recs
 
             if i % homepage_freq == 0:
-                recs = await driver.get_homepage_recs()
-                recs = await self._get_slants(recs)
-                self.history.append(
-                    Watch(self.cur_state, self, self.cur_slant, (self.init_slant, self.target_slant), i, None, recs, [], "homepage", None)
-                )
-                next_vid = await self._get_closest_slant(recs)
-            else: 
-                next_vid = await self._get_closest_slant(watch.recs)
+                recs = await self._get_homepage_recs(driver, i + 1)
+
+            next_vid = await self._get_closest_slant(recs)
 
 
     async def serialize(self):
