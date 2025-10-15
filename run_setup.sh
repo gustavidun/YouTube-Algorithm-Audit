@@ -1,7 +1,8 @@
 cd SockPuppetTest
 cd YouTube-Algorithm-Audit
 source .venv/bin/activate
+git pull
 pip install -r requirements.txt
 python -m patchright install chrome --with-deps
-git pull
 cd src
+python -m batch_run --n 45
