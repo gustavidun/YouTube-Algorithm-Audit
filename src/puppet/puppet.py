@@ -65,8 +65,11 @@ class YTPuppet():
 
         # fill nans with metadata and slant prediction
         missing = await get_videos_metadata(missing)
-        missing = [await asyncio.to_thread(scrape_comments, rec) for rec in missing]
-        missing_preds = await asyncio.to_thread(classifier.predict, missing + missing_slant)
+        missing = await asyncio.gather(*[
+            asyncio.to_thread(scrape_comments, rec)
+            for rec in missing
+        ])
+        missing_preds = classifier.predict(missing + missing_slant)
 
         # insert missing videos in db without slant
         if missing: insert_videos(missing)
