@@ -75,7 +75,6 @@ class YouTubeDriver():
 
 
     async def _get_recs(self, n_recs) -> list[Video]:
-        await asyncio.sleep(1)
         thumbs = await self._page.locator("a.yt-lockup-metadata-view-model__title").all()
         urls = [await x.get_attribute("href") for x in thumbs]
         ids = [re.search(r"/watch\?v=([a-zA-Z0-9_-]{11})", x).group(1) for x in urls] # extract ids
@@ -136,7 +135,7 @@ class YouTubeDriver():
         return vid, recs
 
 
-    async def wait_wt(self, time : float) -> tuple[Video, list[Video]]:
+    async def wait_wt(self, time : float):
         #monitor playback time
         wt = 0
         wt_buffer = deque(maxlen=30)
@@ -144,13 +143,9 @@ class YouTubeDriver():
         while wt <= time:
             wt = await self._page.evaluate("document.querySelector('video')?.currentTime ?? 0") # get player time
             wt_buffer.append(wt)
-            
-            if len(wt_buffer) > 5:  # if stalled for 5 seconds, hit play
-                if wt_buffer[-5] == wt_buffer[-1]:
-                    await self._page.keyboard.press("k")
 
             if len(wt_buffer) > 25:  # if stalled for 25, skip
-                if wt_buffer[-15] == wt_buffer[-1]:
+                if wt_buffer[-26] == wt_buffer[-1]:
                     raise PlaybackException
 
             await asyncio.sleep(1)

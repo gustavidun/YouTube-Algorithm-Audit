@@ -1,6 +1,7 @@
 import logging
 from typing import Literal
 import pandas as pd
+import asyncio
 
 from .youtube_driver import YouTubeDriver, VideoUnavailableException, PlaybackException
 import config
@@ -64,14 +65,13 @@ class YTPuppet():
 
         # fill nans with metadata and slant prediction
         missing = await get_videos_metadata(missing)
-        missing = [scrape_comments(rec) for rec in missing]
-        missing = classifier.predict(missing)
-        missing_slant = classifier.predict(missing_slant)
+        missing = [await asyncio.to_thread(scrape_comments, rec) for rec in missing]
+        missing_preds = await asyncio.to_thread(classifier.predict, missing + missing_slant)
 
         # insert missing videos in db without slant
-        if missing: insert_videos([replace(vid, slant=None) for vid in missing])
+        if missing: insert_videos(missing)
 
-        return match + missing + missing_slant
+        return match + missing_preds
 
 
     async def _get_homepage_recs(self, driver : YouTubeDriver, depth):
@@ -101,7 +101,7 @@ class YTPuppet():
 
         if get_slants:
             try: recs = await self._get_slants(recs)
-            except ValueError: recs = self._get_homepage_recs(driver, depth)  # sample from homepage if no valid videos
+            except ValueError: recs = await self._get_homepage_recs(driver, depth)  # sample from homepage if no valid videos
 
         try: 
             wt = await driver.wait_wt(self.wt)
