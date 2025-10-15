@@ -22,7 +22,7 @@ OUTDIR       = MODELS_DIR / "roberta"
 DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
 torch.set_default_dtype(torch.float32)
 tok = AutoTokenizer.from_pretrained(MODEL_NAME, use_fast=True)
-print("Running on:", DEVICE)
+print(f"Running on: {DEVICE} with {torch.get_num_threads()} threads")
 
 def load():
     df = pd.read_pickle(SLANTS_TRAIN).copy()
