@@ -26,6 +26,9 @@ SLANTS_TRAIN = SLANT_DIR / "slants_train.pkl"
 
 MODELS_DIR = ROOT / "data" / "models"
 
+if not PUPPETS_DIR.exists():
+    os.mkdir(SESSION_DIR)
+
 if not MODELS_DIR.exists():
     os.mkdir(SESSION_DIR)
 
