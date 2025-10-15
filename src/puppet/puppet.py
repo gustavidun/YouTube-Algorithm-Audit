@@ -70,7 +70,7 @@ class YTPuppet():
             for rec in missing
         ])
         missing_preds = classifier.predict(missing + missing_slant)
-
+        print(missing_preds)
         # insert missing videos in db without slant
         if missing: insert_videos(missing)
 
@@ -80,12 +80,13 @@ class YTPuppet():
     async def _get_homepage_recs(self, driver : YouTubeDriver, depth):
         recs = await driver.get_homepage_recs()
 
-        try: recs = await self._get_slants(recs)
-        except ValueError: recs = await driver.get_homepage_recs() # try again if no valid videos
-
         self.history.append(
             Watch(self.cur_state, self, self.cur_slant, (self.init_slant, self.target_slant), depth, None, recs, [], "homepage", 0)
         )
+
+        try: recs = await self._get_slants(recs)
+        except ValueError: return await self._get_homepage_recs(driver, depth)
+
         return recs
 
 
