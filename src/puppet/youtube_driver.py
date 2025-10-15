@@ -1,5 +1,5 @@
 from patchright.async_api import Page, Playwright, BrowserContext, async_playwright
-from patchright.async_api import TimeoutError as PWTimeoutError
+from patchright.async_api import Error as PWError, TimeoutError as PWTimeoutError
 from pathlib import Path
 import re 
 import asyncio
@@ -74,6 +74,20 @@ class YouTubeDriver():
             await self._page.reload()
 
 
+    async def _goto_with_retry(self, url, attempts=3, wait_until="domcontentloaded", timeout=10000):
+        for i in range(attempts):
+            try:
+                return await self._page.goto(url, wait_until=wait_until, timeout=timeout)
+            except PWError as e:
+                msg = str(e)
+                transient = ("ERR_CONNECTION_CLOSED" in msg or
+                            "ERR_CONNECTION_RESET" in msg or
+                            "ERR_TIMED_OUT" in msg)
+                if not transient or i == attempts - 1:
+                    raise
+                await asyncio.sleep(0.5 * (2 ** i))
+
+
     async def _get_recs(self, n_recs) -> list[Video]:
         thumbs = await self._page.locator("a.yt-lockup-metadata-view-model__title").all()
         urls = [await x.get_attribute("href") for x in thumbs]
@@ -85,7 +99,7 @@ class YouTubeDriver():
     async def get_homepage_recs(self, n_recs = 8):
         assert self._page
 
-        await self._page.goto("https://www.youtube.com/")
+        await self._goto_with_retry("https://www.youtube.com/")
         await self._page.wait_for_load_state("domcontentloaded")
 
         return await self._get_recs(n_recs)
@@ -95,7 +109,7 @@ class YouTubeDriver():
         assert self._page
 
         url = f"https://www.youtube.com/watch?v={vid.id}"
-        await self._page.goto(url)
+        await self._goto_with_retry(url)
         await self._page.wait_for_load_state("domcontentloaded")
 
         # check for ads
