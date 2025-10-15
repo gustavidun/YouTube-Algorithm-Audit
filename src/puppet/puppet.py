@@ -70,7 +70,13 @@ class YTPuppet():
             for rec in missing
         ])
         missing_preds = classifier.predict(missing + missing_slant)
-        print(missing_preds)
+
+        def _t(x): 
+            return (x.id, type(x.slant).__name__, x.slant if not isinstance(x.slant, (bytes, bytearray)) else x.slant[:10])
+
+        self.logger.debug(f"match slant types: {[ _t(v) for v in match[:10] ]}")
+        self.logger.debug(f"missing_preds slant types: {[ _t(v) for v in missing_preds[:10] ]}")
+        
         # insert missing videos in db without slant
         if missing: insert_videos(missing)
 
