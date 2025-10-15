@@ -76,7 +76,7 @@ class YTPuppet():
 
     async def _get_homepage_recs(self, driver : YouTubeDriver, depth):
         recs = await driver.get_homepage_recs()
-        
+
         try: recs = await self._get_slants(recs)
         except ValueError: recs = await driver.get_homepage_recs() # try again if no valid videos
 
@@ -108,6 +108,7 @@ class YTPuppet():
         except PlaybackException as e:
             error_log.append(e)
             self.logger.info(f"Can't play video {vid.id}.")
+            wt = 0
         except Exception as e:
             error_log.append(e)
             raise 
