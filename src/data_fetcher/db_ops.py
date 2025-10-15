@@ -6,6 +6,7 @@ import pandas as pd
 from models import Video
 from config import SLANTS_TRAIN
 
+
 def build_metadata():
     """Fills db with metadata from the YouTube Data API"""
     vids = get_videos((-1,1))
@@ -68,5 +69,20 @@ def fill_landmarks():
             vid.R = R_map.get(vid.id)
     update_videos(vids)
 
+
+def nullify_blob_slants():
+    with get_connection() as con:
+        cur = con.execute("SELECT COUNT(*) FROM video WHERE typeof(slant)='blob'")
+        n_blobs = cur.fetchone()[0]
+        if n_blobs == 0:
+            print("No blob slants found.")
+            return
+
+        print(f"Found {n_blobs} blob slants. Replacing with NULL...")
+        con.execute("UPDATE video SET slant=NULL WHERE typeof(slant)='blob'")
+        con.commit()
+        print(f"Successfully nullified {n_blobs} blob slants.")
+
+
 if __name__ == "__main__":
-    pass
+    nullify_blob_slants()

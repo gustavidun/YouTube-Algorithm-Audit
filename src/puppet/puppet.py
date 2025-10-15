@@ -63,22 +63,18 @@ class YTPuppet():
         match = [db_map[r.id] for r in recs if r.id in db_map and db_map[r.id].slant is not None] # in db with slant
         missing_slant = [db_map[r.id] for r in recs if r.id in db_map and db_map[r.id].slant is None] # in db but no slant
 
-        # fill nans with metadata and slant prediction
-        missing = await get_videos_metadata(missing)
-        missing = await asyncio.gather(*[
-            asyncio.to_thread(scrape_comments, rec)
-            for rec in missing
-        ])
+        if missing: 
+            # fill nans with metadata and slant prediction
+            missing = await get_videos_metadata(missing)
+            missing = await asyncio.gather(*[
+                asyncio.to_thread(scrape_comments, rec)
+                for rec in missing
+            ])
+
+            # insert missing videos in db without slant
+            insert_videos([replace(m,slant=None) for m in missing])
+
         missing_preds = classifier.predict(missing + missing_slant)
-
-        def _t(x): 
-            return (x.id, type(x.slant).__name__, x.slant if not isinstance(x.slant, (bytes, bytearray)) else x.slant[:10])
-
-        self.logger.debug(f"match slant types: {[ _t(v) for v in match[:10] ]}")
-        self.logger.debug(f"missing_preds slant types: {[ _t(v) for v in missing_preds[:10] ]}")
-        
-        # insert missing videos in db without slant
-        if missing: insert_videos(missing)
 
         return match + missing_preds
 
