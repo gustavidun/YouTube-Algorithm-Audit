@@ -128,17 +128,6 @@ def train(train_ds, eval_ds):
     tok.save_pretrained(OUTDIR)
 
 
-def predict_rows(model_path, rows : pd.DataFrame):
-    model = AutoModelForSequenceClassification.from_pretrained(model_path)
-    enc = tok(rows.apply(join_row), padding=True, truncation=True, max_length=MAX_LENGTH, return_tensors="pt")
-    enc = {k: v.to(model.device) for k, v in enc.items()}
-    model.eval()
-    with torch.no_grad():
-        logits = model(**enc).logits.squeeze(-1).cpu().numpy()
-    p = 1 / (1 + np.exp(-logits))
-    return 2*p - 1
-
-
 def predict_videos(model_path, vids : list[Video]):
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
     enc = tok([join_video(vid) for vid in vids], padding=True, truncation=True, max_length=MAX_LENGTH, return_tensors="pt")
@@ -148,7 +137,7 @@ def predict_videos(model_path, vids : list[Video]):
         logits = model(**enc).logits.squeeze(-1).cpu().numpy()
     p = 1 / (1 + np.exp(-logits))
     for i, vid in enumerate(vids):
-        vid.slant = 2*p[i] - 1
+        vid.slant = float(2*p[i] - 1)
     return vids
 
 if __name__ == "__main__":
