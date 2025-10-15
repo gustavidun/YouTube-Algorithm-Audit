@@ -139,7 +139,7 @@ class YouTubeDriver():
     async def wait_wt(self, time : float) -> tuple[Video, list[Video]]:
         #monitor playback time
         wt = 0
-        wt_buffer = deque(maxlen=20)
+        wt_buffer = deque(maxlen=30)
 
         while wt <= time:
             wt = await self._page.evaluate("document.querySelector('video')?.currentTime ?? 0") # get player time
@@ -149,7 +149,7 @@ class YouTubeDriver():
                 if wt_buffer[-5] == wt_buffer[-1]:
                     await self._page.keyboard.press("k")
 
-            if len(wt_buffer) > 15:  # if stalled for 15, skip
+            if len(wt_buffer) > 25:  # if stalled for 25, skip
                 if wt_buffer[-15] == wt_buffer[-1]:
                     raise PlaybackException
 

@@ -3,7 +3,7 @@ import asyncio
 from puppet import YTPuppet
 import shortuuid
 
-N = 45
+N = 36
 SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,1)] 
 
 async def main():
