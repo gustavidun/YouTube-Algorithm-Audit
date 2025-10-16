@@ -96,7 +96,7 @@ class YouTubeDriver():
 
         return await self._get_recs(n_recs)
 
-
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10), retry=retry_if_exception_type(PWError))
     async def play_video(self, vid : Video, n_recs = 8):
         assert self._page
 
@@ -132,7 +132,7 @@ class YouTubeDriver():
             )
         except PWTimeoutError:
             raise VideoUnavailableException()
-        
+
         title = await title_elem.get_attribute("title")
         vid.title = title
         self.logger.info(f"Playing video: {vid.title}")
@@ -143,9 +143,9 @@ class YouTubeDriver():
 
     async def wait_wt(self, time : float):
         #monitor playback time
+        """
         wt = 0
         wt_buffer = deque(maxlen=30)
-
         while wt <= time:
             wt = await self._page.evaluate("document.querySelector('video')?.currentTime ?? 0") # get player time
             wt_buffer.append(wt)
@@ -155,6 +155,32 @@ class YouTubeDriver():
                     raise PlaybackException
 
             await asyncio.sleep(1)
+        """
+        WATCH_JS = """
+        async t => new Promise(resolve => {
+            const tryPlay = v => {v.play()};
 
+            const check = () => {
+                const v = document.querySelector('video');
+                if (!v) return false;
+                if (v.ended) { resolve(v.currentTime); return true; }
+                if (v.currentTime >= t) { resolve(v.currentTime); return true; }
+                if (v.paused || v.readyState < 2) tryPlay(v);
+                return false;
+            };
+
+            // quick immediate check
+            if (check()) return;
+
+            const id = setInterval(() => {
+                if (check()) clearInterval(id);
+            }, 500);
+        })
+        """
+        try:
+            wt = await asyncio.wait_for(self._page.evaluate(WATCH_JS, arg=time), timeout=60)
+        except Exception as e:
+            raise PlaybackException
+        
         self.logger.debug(f"Playback time: {wt}")
         return wt

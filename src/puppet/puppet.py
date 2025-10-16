@@ -154,8 +154,11 @@ class YTPuppet():
         for i in range(1, self.drift_depth + 1):
             self.cur_slant += (self.target_slant - self.init_slant) / self.drift_depth # drift term
 
-            watch = await self._watch(driver, next_vid, i, get_slants=True)
-            recs = watch.recs
+            try:
+                watch = await self._watch(driver, next_vid, i, get_slants=True)
+                recs = watch.recs
+            except: 
+                recs = await self._get_homepage_recs(driver, 0)
 
             if i % homepage_freq == 0:
                 recs = await self._get_homepage_recs(driver, i + 1)
