@@ -29,7 +29,9 @@ CREATE INDEX IF NOT EXISTS ix_video_channel ON video(channel);
 
 
 def get_connection():
-    return sqlite3.connect(config.DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
+    con= sqlite3.connect(config.DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES, isolation_level=None)
+    con.execute("PRAGMA journal_mode=WAL;")
+    return con
 
 
 def build_db():
@@ -71,6 +73,7 @@ def insert_video(vid : Video):
             asdict(vid)
         )
 
+
 def insert_videos(vids: list[Video]) -> int:
     logger.info(f"Adding {len(vids)} videos...")
 
@@ -88,6 +91,7 @@ def insert_videos(vids: list[Video]) -> int:
             """,
             [asdict(v) for v in vids]
         )
+
 
 def update_videos(vids : list[Video]):
     logger.info(f"Updating {len(vids)} videos...")
