@@ -3,6 +3,7 @@ import argparse
 
 from puppet import YTPuppet
 import shortuuid
+import random
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--n", type=int, default=36)
@@ -21,6 +22,7 @@ SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,
 crashes = 0
 
 async def safe_run(puppet : YTPuppet):
+    await asyncio.sleep(random.uniform(0,3))
     try:
         await puppet.run()
     except Exception as e:
