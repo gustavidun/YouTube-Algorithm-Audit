@@ -138,6 +138,10 @@ class YouTubeDriver():
         self.logger.info(f"Playing video: {vid.title}")
 
         recs = await self._get_recs(n_recs)
+
+        #pause
+        await self._page.evaluate("document.querySelector('video')?.pause()")
+
         return vid, recs
 
 

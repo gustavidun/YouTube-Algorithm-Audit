@@ -6,7 +6,7 @@ import shortuuid
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--n", type=int, default=36)
+parser.add_argument("--n", type=int, default=45)
 parser.add_argument("--train", type=int, default=100)
 parser.add_argument("--drift", type=int, default=200)
 parser.add_argument("--headless", type=bool, default=True)
