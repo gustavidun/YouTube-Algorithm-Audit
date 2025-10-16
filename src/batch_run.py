@@ -18,11 +18,14 @@ HEADLESS = args.headless
 
 SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,1)] 
 
+crashes = 0
+
 async def safe_run(puppet : YTPuppet):
     try:
         await puppet.run()
     except Exception as e:
         puppet.logger.exception("Puppet crashed", exc_info=e)
+        crashes += 1
 
 async def main():
 
@@ -52,4 +55,5 @@ async def main():
 
 if __name__ == "__main__":
     puppets = asyncio.run(main())
+    print(f"Finished run. Lost {crashes} puppets")
 
