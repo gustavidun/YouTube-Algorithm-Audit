@@ -84,11 +84,11 @@ class YTPuppet():
     async def _get_homepage_recs(self, driver : YouTubeDriver, depth):
         recs = await driver.get_homepage_recs()
 
+        recs = await self._get_slants(recs)
+
         self.history.append(
             Watch(self.cur_state, self, self.cur_slant, (self.init_slant, self.target_slant), depth, None, recs, [], "homepage", 0)
         )
-
-        recs = await self._get_slants(recs)
 
         return recs
 

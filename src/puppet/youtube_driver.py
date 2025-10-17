@@ -31,7 +31,6 @@ class YouTubeDriver():
 
 
     async def __aenter__(self):
-        """ Launch session with persistent context """
         self._playwright = await async_playwright().start()
         self.session_dir.mkdir(exist_ok=True) #create dir if not exists
 
@@ -96,6 +95,7 @@ class YouTubeDriver():
 
         return await self._get_recs(n_recs)
 
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10), retry=retry_if_exception_type(PWError))
     async def play_video(self, vid : Video, n_recs = 8):
         assert self._page
@@ -140,7 +140,7 @@ class YouTubeDriver():
         recs = await self._get_recs(n_recs)
 
         #pause
-        await self._page.evaluate("document.querySelector('video')?.pause()")
+        await self._page.evaluate("document.querySelector('video')?.pause();")
 
         return vid, recs
 
