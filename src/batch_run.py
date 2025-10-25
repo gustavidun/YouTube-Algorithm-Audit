@@ -17,11 +17,12 @@ TRAIN = args.train
 DRIFT = args.drift
 HEADLESS = args.headless
 
-SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,1)] 
+SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,1), (-99,-99)] #-99 = random 
 
 crashes = 0
 
 async def safe_run(puppet : YTPuppet):
+    global crashes
     await asyncio.sleep(random.uniform(0,30))
     try:
         await puppet.run()
@@ -37,17 +38,22 @@ async def main():
     k = N // len(SLANTS)
     partitions = SLANTS * k
 
-    puppets = [
-        YTPuppet(
-            f"p-{shortuuid.uuid()}",
-            slant=s[0],
-            target_slant=s[1],
-            train_depth=TRAIN,
-            drift_depth=DRIFT,
-            headless=HEADLESS
-        ) 
-        for i, s in enumerate(partitions)
-    ]
+    puppets = []
+    for i, s in enumerate(partitions):
+        if s[0] == -99:
+            num = random.uniform(-1,1)
+            s = (num, num)
+
+        puppets.append(
+            YTPuppet(
+                f"p-{shortuuid.uuid()}",
+                slant=s[0],
+                target_slant=s[1],
+                train_depth=TRAIN,
+                drift_depth=DRIFT,
+                headless=HEADLESS
+            )
+        )
 
     async with asyncio.TaskGroup() as tg:
         for p in puppets:

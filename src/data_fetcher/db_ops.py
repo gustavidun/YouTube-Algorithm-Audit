@@ -5,7 +5,7 @@ import random
 import pandas as pd
 from models import Video
 from config import SLANTS_TRAIN
-
+from lingua import LanguageDetectorBuilder, Language
 
 def build_metadata():
     """Fills db with metadata from the YouTube Data API"""
@@ -80,9 +80,16 @@ def nullify_blob_slants():
 
         print(f"Found {n_blobs} blob slants. Replacing with NULL...")
         con.execute("UPDATE video SET slant=NULL WHERE typeof(slant)='blob'")
-        con.commit()
         print(f"Successfully nullified {n_blobs} blob slants.")
 
 
+def filter_lang():
+    detector = LanguageDetectorBuilder.from_languages(Language.ENGLISH).build()
+    remove = [vid.id for vid in get_videos((-1,1)) if detector.detect_language_of(vid.title) == None]
+    with get_connection() as con:
+        placeholders = ",".join("?" * len(remove))
+        con.execute(f"DELETE FROM video WHERE id IN ({placeholders})", remove)
+    print(f"Deleted {len(remove)} videos.")
+
 if __name__ == "__main__":
-    nullify_blob_slants()
+    filter_lang()

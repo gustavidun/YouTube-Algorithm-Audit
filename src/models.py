@@ -38,6 +38,7 @@ class Watch():
     errors : list[str]
     source : Literal["homepage", "video"]
     watch_time : float
+    topics : Optional[list[str]] = None
 
     def __str__(self):
         return f"{self.video}. Depth: {self.depth}, puppet slant: {self.puppet_slant}, puppet state: {self.state}"

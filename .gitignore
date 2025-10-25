@@ -10,5 +10,6 @@ data/db
 data/slant/blacklist.pkl
 data/slant/slants_train.csv
 data/slant/slants_train.pkl
+data/slant/human_labels
 data/models/
 .vscode/

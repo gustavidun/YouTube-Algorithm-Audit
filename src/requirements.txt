@@ -115,4 +115,5 @@ xxhash==3.6.0
 yarl==1.21.0
 youtube-comment-downloader==0.1.78
 youtube-transcript-api==1.2.2
-tenacity
+tenacity==9.1.2
+lingua-language-detector==2.1.1

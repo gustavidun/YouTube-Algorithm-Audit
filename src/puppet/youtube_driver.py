@@ -92,8 +92,10 @@ class YouTubeDriver():
 
         await self._goto_with_retry("https://www.youtube.com/")
         await self._page.wait_for_load_state("domcontentloaded")
-
-        return await self._get_recs(n_recs)
+        recs = await self._get_recs(n_recs)
+        topics = await self._page.locator(".ytChipShapeChip").all_inner_texts()
+        print(topics[0])
+        return recs, topics
 
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10), retry=retry_if_exception_type(PWError))

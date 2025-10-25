@@ -1,1 +1,1 @@
-from .inference import predict
+from .inference import predict, filter_english

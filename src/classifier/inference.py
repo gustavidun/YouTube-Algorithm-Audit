@@ -3,8 +3,13 @@ from models import Video
 from logger import setup_logger
 from time import time
 from config import MODELS_DIR
+from lingua import Language, LanguageDetectorBuilder
 
+detector = LanguageDetectorBuilder.from_languages(Language.ENGLISH).build()
 logger = setup_logger("Inference")
+
+def filter_english(vids : list[Video]):
+    return [vid for vid in vids if detector.detect_language_of(vid.title) == Language.ENGLISH]
 
 def predict(vids : list[Video]) -> list[float]:
     """ Prediction wrapper """

@@ -54,7 +54,8 @@ class YTPuppet():
         vid_hist = [w for w in self.history if w.source == "video"] # filter out homepage watches
         rec_old = recs
         recs = [rec for rec in recs if rec.id not in [w.video.id for w in vid_hist]]
-        self.logger.info(f"Filtered out {len(rec_old) - len(recs)} already watched videos.")
+
+        self.logger.info(f"Filtered out {len(rec_old) - len(recs)} videos.")
         if len(recs) == 0:
             raise ValueError("No valid videos")
 
@@ -67,6 +68,7 @@ class YTPuppet():
         if missing: 
             # fill nans with metadata and slant prediction
             missing = await get_videos_metadata(missing)
+            missing = classifier.filter_english(missing)
             """missing = await asyncio.gather(*[
                 asyncio.to_thread(scrape_comments, rec)
                 for rec in missing
@@ -82,12 +84,24 @@ class YTPuppet():
 
     @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def _get_homepage_recs(self, driver : YouTubeDriver, depth):
-        recs = await driver.get_homepage_recs()
+        recs, topics = await driver.get_homepage_recs()
 
         recs = await self._get_slants(recs)
 
         self.history.append(
-            Watch(self.cur_state, self, self.cur_slant, (self.init_slant, self.target_slant), depth, None, recs, [], "homepage", 0)
+            Watch(
+                state=self.cur_state,
+                puppet=self,
+                puppet_slant=self.cur_slant,
+                puppet_cond=(self.init_slant, self.target_slant),
+                depth=depth,
+                video=None,
+                recs=recs,
+                errors=[],
+                source="homepage",
+                watch_time=0,
+                topics=topics
+            )
         )
 
         return recs
@@ -120,7 +134,18 @@ class YTPuppet():
             error_log.append(e)
             raise 
 
-        watch = Watch(self.cur_state, self, self.cur_slant, (self.init_slant, self.target_slant), depth, vid, recs, error_log, "video", wt)
+        watch = Watch(
+            state=self.cur_state, 
+            puppet=self,
+            puppet_slant=self.cur_slant,
+            puppet_cond=(self.init_slant, self.target_slant),
+            depth=depth,
+            video=vid,
+            recs=recs,
+            errors=error_log,
+            source="video",
+            watch_time=wt
+        )
 
         self.history.append(watch)
         if not error_log: self.logger.info(f"Finished watch without error. {watch}")
@@ -180,7 +205,8 @@ class YTPuppet():
                 "recs_slant": [r.slant for r in w.recs],
                 "errors": w.errors,
                 "source": w.source,
-                "watch_time": w.watch_time
+                "watch_time": w.watch_time,
+                "topics": w.topics
             }
             for w in self.history
         ]
