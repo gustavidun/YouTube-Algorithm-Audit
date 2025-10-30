@@ -154,9 +154,12 @@ class YTPuppet():
         return watch
 
 
-    async def train(self, driver : YouTubeDriver, slant_margin = 0.05):
+    async def train(self, driver : YouTubeDriver, slant_margin = 0.1):
         self.cur_state = "training"
 
+        if self.cur_slant + slant_margin > 1 or self.cur_slant - slant_margin < -1:
+            slant_margin = slant_margin * 2
+            
         slant_range = (self.cur_slant-slant_margin, self.cur_slant+slant_margin)
 
         self.logger.info(f"Fetching train videos in slant range: {slant_range}")
