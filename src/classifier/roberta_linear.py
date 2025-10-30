@@ -7,18 +7,18 @@ from transformers import (
     AutoTokenizer, AutoModelForSequenceClassification,
     DataCollatorWithPadding, Trainer, TrainingArguments
 )
+from transformers.trainer_utils import get_last_checkpoint
 
-MODEL_NAME   = "roberta-base"   # or "roberta-base"
+MODEL_NAME   = "roberta-base"
 MAX_LENGTH   = 256
 VAL_FRACTION = 0.10
 BATCH_TRAIN  = 16
 BATCH_EVAL   = 32
-EPOCHS       = 3
+EPOCHS       = 10
 LR           = 2e-5
 WEIGHT_GAMMA = 1
-OUTDIR       = MODELS_DIR / "roberta_linear"
+OUTDIR       = MODELS_DIR / "roberta_linear1"
 
-# M2 Max / Apple Silicon: prefer MPS, keep fp32
 DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
 torch.set_default_dtype(torch.float32)
 tok = AutoTokenizer.from_pretrained(MODEL_NAME)
@@ -43,12 +43,9 @@ def join_row(row):
     title = str(row.get("title", "")).strip()
     desc  = str(row.get("description", "")).strip()
     tags  = row.get("tags", "")
-    comments = row.get("comments", "")
     if isinstance(tags, (list, tuple)): tags = " ".join(map(str, tags))
-    if isinstance(comments, (list, tuple)): comments = " ".join(map(str, comments))
     tags = str(tags).strip()
-    comments = str(comments).strip()
-    return " [SEP] ".join([s for s in (title, desc, tags, comments) if s])
+    return " [SEP] ".join([s for s in (title, desc, tags) if s])
 
 
 def join_video(vid : Video):
@@ -88,7 +85,7 @@ def train(train_ds, eval_ds):
         save_strategy="epoch",
         logging_strategy='epoch',
         load_best_model_at_end=True,
-        fp16=False, bf16=False,     # important for MPS
+        fp16=False, bf16=False
     )
 
     trainer = Trainer(
@@ -98,10 +95,11 @@ def train(train_ds, eval_ds):
         eval_dataset=eval_ds,
         tokenizer=tok,
         data_collator=data_collator,
-        compute_metrics=compute_metrics,
+        compute_metrics=compute_metrics
     )
 
-    trainer.train()
+    last_ckpt = get_last_checkpoint(str(OUTDIR))
+    trainer.train(resume_from_checkpoint=last_ckpt)
     print(trainer.evaluate())
     trainer.save_model(OUTDIR)
     tok.save_pretrained(OUTDIR)

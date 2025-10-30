@@ -94,7 +94,6 @@ class YouTubeDriver():
         await self._page.wait_for_load_state("domcontentloaded")
         recs = await self._get_recs(n_recs)
         topics = await self._page.locator(".ytChipShapeChip").all_inner_texts()
-        print(topics[0])
         return recs, topics
 
 
