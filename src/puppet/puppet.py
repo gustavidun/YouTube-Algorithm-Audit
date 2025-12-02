@@ -209,7 +209,8 @@ class YTPuppet():
                 "errors": w.errors,
                 "source": w.source,
                 "watch_time": w.watch_time,
-                "topics": w.topics
+                "topics": w.topics,
+                "utility": self.utility
             }
             for w in self.history
         ]
