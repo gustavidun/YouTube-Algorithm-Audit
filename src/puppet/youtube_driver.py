@@ -38,16 +38,10 @@ class YouTubeDriver():
             self.session_dir,
             headless=self.headless,
             channel="chrome",
-            #no_viewport=True,
-            args=[
-                #f"--disable-extensions-except={self.ublock_path.absolute()}",
-                #f"--load-extension={self.ublock_path.absolute()}",
-            ]
         )
         self._page = self._context.pages[0] if self._context.pages else await self._context.new_page()
 
         session = await self._context.new_cdp_session(self._page)
-        info = await session.send("Browser.getVersion")
         self.logger.info("Initialising YouTube Driver.")
 
         await self._page.goto("https://www.youtube.com")

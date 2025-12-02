@@ -16,7 +16,7 @@ from models import Watch, Video
 PuppetState = Literal["init", "training", "drifting", "closed"]
 
 class YTPuppet():
-    def __init__(self, id : str, slant : float, target_slant : float, headless : bool = True, train_depth = 100, drift_depth = 200, wt = 30):
+    def __init__(self, id : str, slant : float, target_slant : float, headless : bool = True, train_depth = 100, drift_depth = 200, wt = 30, utility=True):
         self.ID = id
         self.cur_slant = slant
         self.init_slant = slant
@@ -25,6 +25,7 @@ class YTPuppet():
         self.train_depth = train_depth
         self.drift_depth = drift_depth
         self.wt = wt
+        self.utility = utility
 
         self.cur_state : PuppetState = "init"
         self.history : list[Watch] = []
@@ -159,7 +160,7 @@ class YTPuppet():
 
         if self.cur_slant + slant_margin > 1 or self.cur_slant - slant_margin < -1:
             slant_margin = slant_margin * 2
-            
+
         slant_range = (self.cur_slant-slant_margin, self.cur_slant+slant_margin)
 
         self.logger.info(f"Fetching train videos in slant range: {slant_range}")
@@ -177,7 +178,7 @@ class YTPuppet():
     async def drift(self, driver : YouTubeDriver, homepage_freq = 5):
         self.cur_state = "drifting"
         recs = await self._get_homepage_recs(driver, 0)
-        next_vid = await self._get_closest_slant(recs)
+        next_vid = await self._get_closest_slant(recs) if self.utility else recs[0]
 
         for i in range(1, self.drift_depth + 1):
             self.cur_slant += (self.target_slant - self.init_slant) / self.drift_depth # drift term
@@ -191,8 +192,7 @@ class YTPuppet():
             if i % homepage_freq == 0:
                 recs = await self._get_homepage_recs(driver, i + 1)
 
-            next_vid = await self._get_closest_slant(recs)
-
+            next_vid = await self._get_closest_slant(recs) if self.utility else recs[0]
 
     async def serialize(self):
         rows = [

@@ -10,14 +10,17 @@ parser.add_argument("--n", type=int, default=45)
 parser.add_argument("--train", type=int, default=100)
 parser.add_argument("--drift", type=int, default=200)
 parser.add_argument("--headless", type=bool, default=True)
+parser.add_argument("--utility", type=bool, default=True)
 args = parser.parse_args()
 
 N = args.n
 TRAIN = args.train
 DRIFT = args.drift
 HEADLESS = args.headless
+UTILITY = args.utility
 
-SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,1), (-99,-99)] #-99 = random 
+if UTILITY: SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,1), (-99,-99)] #-99 = random 
+else: SLANTS = [(-1,-1), (0,0), (1,1), (-99,-99)]
 
 crashes = 0
 
@@ -51,7 +54,8 @@ async def main():
                 target_slant=s[1],
                 train_depth=TRAIN,
                 drift_depth=DRIFT,
-                headless=HEADLESS
+                headless=HEADLESS,
+                utility=UTILITY
             )
         )
 
