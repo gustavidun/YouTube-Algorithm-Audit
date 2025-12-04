@@ -10,7 +10,7 @@ parser.add_argument("--n", type=int, default=45)
 parser.add_argument("--train", type=int, default=100)
 parser.add_argument("--drift", type=int, default=200)
 parser.add_argument("--headless", type=bool, default=True)
-parser.add_argument("--utility", type=bool, default=True)
+parser.add_argument("--utility", action=argparse.BooleanOptionalAction, default=True)
 args = parser.parse_args()
 
 N = args.n
