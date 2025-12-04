@@ -66,6 +66,7 @@ async def main():
     return puppets
 
 if __name__ == "__main__":
+    print(f"Running {N} puppets with utility = {UTILITY}")
     puppets = asyncio.run(main())
     print(f"Finished run. Lost {crashes} puppets")
 
