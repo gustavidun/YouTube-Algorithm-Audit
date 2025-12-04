@@ -5,4 +5,4 @@ git pull
 pip install -r requirements.txt
 python -m patchright install chrome --with-deps
 cd src
-python -m batch_run --n 40 --utility False
+python -m batch_run --n 40 --no-utility
