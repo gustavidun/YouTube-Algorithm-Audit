@@ -20,7 +20,7 @@ HEADLESS = args.headless
 UTILITY = args.utility
 
 if UTILITY: SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,1), (-99,-99)] #-99 = random 
-else: SLANTS = [(-1,-1), (0,0), (1,1), (-99,-99)]
+else: SLANTS = [(-99,-99)]
 
 crashes = 0
 
