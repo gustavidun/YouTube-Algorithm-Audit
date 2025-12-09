@@ -22,6 +22,10 @@ class YTPuppet():
         self.init_slant = slant
         self.target_slant = target_slant
 
+        self.slant_margin = 0.1
+        range_center = max(-1 + self.slant_margin, min(1 - self.slant_margin, self.cur_slant))
+        self.slant_range = (range_center-self.slant_margin, range_center+self.slant_margin)
+
         self.train_depth = train_depth
         self.drift_depth = drift_depth
         self.wt = wt
@@ -158,14 +162,9 @@ class YTPuppet():
     async def train(self, driver : YouTubeDriver, slant_margin = 0.1):
         self.cur_state = "training"
 
-        if self.cur_slant + slant_margin > 1 or self.cur_slant - slant_margin < -1:
-            slant_margin = slant_margin * 2
-
-        slant_range = (self.cur_slant-slant_margin, self.cur_slant+slant_margin)
-
-        self.logger.info(f"Fetching train videos in slant range: {slant_range}")
+        self.logger.info(f"Fetching train videos in slant range: {self.slant_range}")
         train_vids = get_videos(
-            slant_range=slant_range,
+            slant_range=self.slant_range,
             n=self.train_depth,
             train=True
         )
@@ -210,7 +209,8 @@ class YTPuppet():
                 "source": w.source,
                 "watch_time": w.watch_time,
                 "topics": w.topics,
-                "utility": self.utility
+                "utility": self.utility,
+                "slant_range": self.slant_range
             }
             for w in self.history
         ]
