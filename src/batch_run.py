@@ -11,7 +11,7 @@ parser.add_argument("--train", type=int, default=100)
 parser.add_argument("--drift", type=int, default=200)
 parser.add_argument("--headless", type=bool, default=True)
 parser.add_argument("--utility", action=argparse.BooleanOptionalAction, default=True)
-parser.add_argument("--random", action=argparse.BooleanOptionalAction, default=True)
+parser.add_argument("--random", action=argparse.BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
 N = args.n
@@ -68,7 +68,7 @@ async def main():
     return puppets
 
 if __name__ == "__main__":
-    print(f"Running {N} puppets with utility = {UTILITY}")
+    print(f"Running {N} puppets with utility = {UTILITY}, RANDOM = {RANDOM}")
     puppets = asyncio.run(main())
     print(f"Finished run. Lost {crashes} puppets")
 
