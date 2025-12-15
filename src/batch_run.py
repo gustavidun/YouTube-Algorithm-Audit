@@ -11,6 +11,7 @@ parser.add_argument("--train", type=int, default=100)
 parser.add_argument("--drift", type=int, default=200)
 parser.add_argument("--headless", type=bool, default=True)
 parser.add_argument("--utility", action=argparse.BooleanOptionalAction, default=True)
+parser.add_argument("--random", action=argparse.BooleanOptionalAction, default=True)
 args = parser.parse_args()
 
 N = args.n
@@ -18,8 +19,9 @@ TRAIN = args.train
 DRIFT = args.drift
 HEADLESS = args.headless
 UTILITY = args.utility
+RANDOM = args.random
 
-if UTILITY: SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,1), (-99,-99)] #-99 = random 
+if not RANDOM: SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,1), (-99,-99)] #-99 = random 
 else: SLANTS = [(-99,-99)]
 
 crashes = 0
