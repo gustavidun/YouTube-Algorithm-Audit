@@ -218,7 +218,7 @@ class YTPuppet():
 
 
     async def run(self):
-        self.logger.info(f"Running sock-puppet, {self.ID}")
+        self.logger.info(f"Running sock-puppet, {self.ID} – Utility: {self.utility}")
 
         async with self.driver(**self.driver_args) as driver:
             await driver.consent_check()
