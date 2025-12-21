@@ -48,7 +48,7 @@ async def main():
             s = (num, num)
 
         if RANDOM:
-            util = True if i+1%2 == 0 else False
+            util = True if (i+1)%2 == 0 else False
 
         puppets.append(
             YTPuppet(
