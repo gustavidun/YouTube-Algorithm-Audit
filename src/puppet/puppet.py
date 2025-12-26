@@ -159,7 +159,7 @@ class YTPuppet():
         return watch
 
 
-    async def train(self, driver : YouTubeDriver, slant_margin = 0.1):
+    async def train(self, driver : YouTubeDriver):
         self.cur_state = "training"
 
         self.logger.info(f"Fetching train videos in slant range: {self.slant_range}")
@@ -218,7 +218,7 @@ class YTPuppet():
 
 
     async def run(self):
-        self.logger.info(f"Running sock-puppet, {self.ID} – Utility: {self.utility}")
+        self.logger.info(f"Running sock-puppet, {self.ID} – Utility: {self.utility}, Slant: {self.target_slant}")
 
         async with self.driver(**self.driver_args) as driver:
             await driver.consent_check()
