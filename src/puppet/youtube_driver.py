@@ -45,6 +45,7 @@ class YouTubeDriver():
         self.logger.info("Initialising YouTube Driver.")
 
         await self._page.goto("https://www.youtube.com")
+        self.logger.info("Succesfully launched chrome.")
 
         return self
 

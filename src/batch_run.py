@@ -4,6 +4,7 @@ import argparse
 from puppet import YTPuppet
 import shortuuid
 import random
+import logging
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--n", type=int, default=45)
@@ -11,6 +12,7 @@ parser.add_argument("--train", type=int, default=100)
 parser.add_argument("--drift", type=int, default=200)
 parser.add_argument("--headless", type=bool, default=True)
 parser.add_argument("--random", action=argparse.BooleanOptionalAction, default=False)
+parser.add_argument("--debug", action=argparse.BooleanOptionalAction, default=False)
 args = parser.parse_args()
 
 N = args.n
@@ -18,6 +20,7 @@ TRAIN = args.train
 DRIFT = args.drift
 HEADLESS = args.headless
 RANDOM = args.random
+LOGGER = args.debug
 
 if not RANDOM: SLANTS = [(-1, 0), (-1, 1), (0, 1), (0, -1), (1, 0), (1,-1), (-1,-1), (0,0), (1,1), (-99,-99)] #-99 = random 
 else: SLANTS = [(-99,-99)]
@@ -58,7 +61,8 @@ async def main():
                 train_depth=TRAIN,
                 drift_depth=DRIFT,
                 headless=HEADLESS,
-                utility=util
+                utility=util,
+                logger_level=logging.DEBUG if LOGGER else logging.INFO
             )
         )
 

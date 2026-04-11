@@ -16,7 +16,7 @@ from models import Watch, Video
 PuppetState = Literal["init", "training", "drifting", "closed"]
 
 class YTPuppet():
-    def __init__(self, id : str, slant : float, target_slant : float, headless : bool = True, train_depth = 100, drift_depth = 200, wt = 30, utility=True):
+    def __init__(self, id : str, slant : float, target_slant : float, headless : bool = True, train_depth = 100, drift_depth = 200, wt = 30, utility=True, logger_level=logging.DEBUG):
         self.ID = id
         self.cur_slant = slant
         self.init_slant = slant
@@ -36,7 +36,7 @@ class YTPuppet():
 
         self.logger = setup_logger(
             self.ID,
-            level=logging.DEBUG,
+            level=logger_level,
             file_out=config.LOG_DIR / self.ID
         )
 
@@ -168,6 +168,9 @@ class YTPuppet():
             n=self.train_depth,
             train=True
         )
+
+        self.logger.debug(f"TRAIN DEPTH: {self.train_depth}")
+        self.logger.debug(f"VIDEOS AVAILABLE: {len(train_vids)}")
 
         for i, vid in enumerate(train_vids):
             try: await self._watch(driver, vid, i + 1, get_slants=False)
