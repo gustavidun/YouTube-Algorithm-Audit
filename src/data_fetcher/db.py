@@ -49,10 +49,10 @@ def build_db():
         #build from CSV if IDs dont exist
         con.executemany("""
             INSERT OR IGNORE INTO video 
-                (id, slant, L, R)
-            VALUES (?, ?, ?, ?)
+                (id, slant, L, R, train)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            zip(ids, slants, L, R)
+            zip(ids, slants, L, R, [1]*len(df))
         )
 
 
