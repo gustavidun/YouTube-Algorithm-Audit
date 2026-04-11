@@ -44,8 +44,7 @@ async def main():
     puppets = []
     for i, s in enumerate(partitions):
         if s[0] == -99:
-            lo, hi = random.choice(-1,1)
-            num = random.uniform(lo,hi)
+            num = random.uniform(-1,1)
             s = (num, num)
 
         if RANDOM:
