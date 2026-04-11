@@ -30,7 +30,7 @@ if not PUPPETS_DIR.exists():
     os.mkdir(PUPPETS_DIR)
 
 if not MODELS_DIR.exists():
-    os.mkdir(SESSION_DIR)
+    os.mkdir(MODELS_DIR)
 
 if not SESSION_DIR.exists():
     os.mkdir(SESSION_DIR)
