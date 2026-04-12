@@ -79,6 +79,7 @@ class YouTubeDriver():
         urls = [await x.get_attribute("href") for x in thumbs]
         ids = [re.search(r"/watch\?v=([a-zA-Z0-9_-]{11})", x).group(1) for x in urls] # extract ids
         recs = [Video(id) for id in ids]
+        self.logger.debug(f"Video IDs found on video page: {recs}")
         return recs[:n_recs]  
 
 
@@ -89,6 +90,7 @@ class YouTubeDriver():
         await self._page.wait_for_load_state("domcontentloaded")
         recs = await self._get_recs(n_recs)
         topics = await self._page.locator(".ytChipShapeChip").all_inner_texts()
+        self.logger.debug(f"Video IDs found on homepage: {recs}")
         return recs, topics
 
 
